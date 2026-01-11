@@ -1,14 +1,44 @@
 /**
  * Bindery Estimator - Entry Point
  *
- * TODO: Define core data models (Job, Quote, LineItem)
- * TODO: Add job creation and pricing logic
- * TODO: Implement PDF generation for quotes/tickets
- * TODO: Add persistence layer
+ * Wires up storage and services for the application.
  */
 
-function main(): void {
-  console.log("Bindery Estimator starting...");
+import { join } from "node:path";
+import { JsonStore } from "./storage/jsonStore.js";
+import { CustomerService } from "./services/customerService.js";
+import { QuoteService } from "./services/quoteService.js";
+import { JobService } from "./services/jobService.js";
+import type { Customer, Quote, Job } from "./types/index.js";
+
+// Data directory relative to project root
+const DATA_DIR = join(process.cwd(), "data");
+
+// Initialize stores
+const customerStore = new JsonStore<Customer>(join(DATA_DIR, "customers.json"));
+const quoteStore = new JsonStore<Quote>(join(DATA_DIR, "quotes.json"));
+const jobStore = new JsonStore<Job>(join(DATA_DIR, "jobs.json"));
+
+// Initialize services
+export const customerService = new CustomerService(customerStore);
+export const quoteService = new QuoteService(quoteStore, customerStore);
+export const jobService = new JobService(jobStore, quoteStore);
+
+// Re-export types for convenience
+export * from "./types/index.js";
+
+async function main(): Promise<void> {
+  console.log("Bindery Estimator initialized");
+  console.log(`Data directory: ${DATA_DIR}`);
+
+  // Show counts
+  const customers = await customerService.list();
+  const quotes = await quoteService.list();
+  const jobs = await jobService.list();
+
+  console.log(`Customers: ${customers.length}`);
+  console.log(`Quotes: ${quotes.length}`);
+  console.log(`Jobs: ${jobs.length}`);
 }
 
-main();
+main().catch(console.error);
