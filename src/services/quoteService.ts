@@ -10,8 +10,8 @@ import type {
   CreateQuantityOptionInput,
   QuoteStatus,
   Repository,
-} from "../types/index.js";
-import { generateId, generateQuoteNumber, now } from "../utils/idGenerator.js";
+} from "../types";
+import { generateId, generateQuoteNumber, now } from "../utils/idGenerator";
 
 export class QuoteService {
   constructor(

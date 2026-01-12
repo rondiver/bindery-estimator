@@ -6,7 +6,7 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { dirname } from "node:path";
-import type { Repository } from "../types/index.js";
+import type { Repository } from "../types";
 
 export class JsonStore<T extends { id: string }> implements Repository<T> {
   private filePath: string;
@@ -30,6 +30,10 @@ export class JsonStore<T extends { id: string }> implements Repository<T> {
 
     try {
       const data = await readFile(this.filePath, "utf-8");
+      if (!data || data.trim() === "") {
+        this.cache = [];
+        return this.cache;
+      }
       this.cache = JSON.parse(data) as T[];
       return this.cache;
     } catch (error) {

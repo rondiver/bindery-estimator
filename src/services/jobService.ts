@@ -2,8 +2,8 @@
  * Job service - business logic for job management
  */
 
-import type { Job, Quote, JobStatus, Repository } from "../types/index.js";
-import { generateId, generateJobNumber, now } from "../utils/idGenerator.js";
+import type { Job, Quote, JobStatus, Repository } from "../types";
+import { generateId, generateJobNumber, now } from "../utils/idGenerator";
 
 export class JobService {
   constructor(
