@@ -2,7 +2,7 @@
 
 import { useState, useMemo, Suspense } from "react";
 import type { Job } from "@/src/lib/services";
-import { deleteJob, startJob, completeJob } from "../actions/jobs";
+import { startJob, completeJob } from "../actions/jobs";
 import {
   SearchInput,
   StatusFilter,
@@ -18,18 +18,24 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-700",
   in_progress: "bg-blue-100 text-blue-700",
   complete: "bg-green-100 text-green-700",
+  on_hold: "bg-orange-100 text-orange-700",
+  cancelled: "bg-red-100 text-red-700",
 };
 
 const statusLabels: Record<string, string> = {
   pending: "Pending",
   in_progress: "In Progress",
   complete: "Complete",
+  on_hold: "On Hold",
+  cancelled: "Cancelled",
 };
 
 const statusOptions = [
   { value: "pending", label: "Pending" },
   { value: "in_progress", label: "In Progress" },
   { value: "complete", label: "Complete" },
+  { value: "on_hold", label: "On Hold" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
 function JobListContent({ jobs }: { jobs: Job[] }) {
@@ -51,7 +57,8 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
         (j) =>
           j.jobNumber.toLowerCase().includes(searchLower) ||
           j.customerName.toLowerCase().includes(searchLower) ||
-          j.jobTitle.toLowerCase().includes(searchLower)
+          j.jobTitle.toLowerCase().includes(searchLower) ||
+          (j.customerJobNumber && j.customerJobNumber.toLowerCase().includes(searchLower))
       );
     }
 
@@ -60,15 +67,24 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
       result = result.filter((j) => j.status === status);
     }
 
-    // Sort by status priority, then by date
+    // Sort by status priority, then by due date, then by updated date
     const statusPriority: Record<string, number> = {
       in_progress: 0,
       pending: 1,
-      complete: 2,
+      on_hold: 2,
+      complete: 3,
+      cancelled: 4,
     };
     result.sort((a, b) => {
       const priorityDiff = statusPriority[a.status] - statusPriority[b.status];
       if (priorityDiff !== 0) return priorityDiff;
+      // Sort by due date if both have one
+      if (a.dueDate && b.dueDate) {
+        return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      }
+      // Jobs with due dates come first
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
       return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
     });
 
@@ -82,16 +98,6 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
     startIndex,
     startIndex + ITEMS_PER_PAGE
   );
-
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this job?")) return;
-    setActionInProgress(id);
-    try {
-      await deleteJob(id);
-    } finally {
-      setActionInProgress(null);
-    }
-  }
 
   async function handleStart(id: string) {
     setActionInProgress(id);
@@ -159,16 +165,16 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
                   Job #
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
+                  Customer Job #
+                </th>
+                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                   Customer
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                   Title
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Quantity
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Total
+                  Due Date
                 </th>
                 <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
                   Status
@@ -179,60 +185,70 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {paginatedJobs.map((job) => (
-                <tr key={job.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/jobs/${job.id}`}
-                      className="text-blue-600 hover:underline font-mono"
-                    >
-                      {job.jobNumber}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3">{job.customerName}</td>
-                  <td className="px-4 py-3 text-gray-600">{job.jobTitle}</td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {job.quantity.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    ${(job.quantity * job.unitPrice).toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${statusColors[job.status]}`}
-                    >
-                      {statusLabels[job.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {job.status === "pending" && (
-                      <button
-                        onClick={() => handleStart(job.id)}
-                        disabled={actionInProgress === job.id}
-                        className="text-blue-600 hover:text-blue-800 mr-3 disabled:opacity-50"
+              {paginatedJobs.map((job) => {
+                const isDueSoon = job.dueDate && new Date(job.dueDate) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+                const isOverdue = job.dueDate && new Date(job.dueDate) < new Date() && job.status !== "complete" && job.status !== "cancelled";
+                return (
+                  <tr key={job.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <a
+                        href={`/jobs/${job.id}`}
+                        className="text-blue-600 hover:underline font-mono"
                       >
-                        Start
-                      </button>
-                    )}
-                    {job.status === "in_progress" && (
-                      <button
-                        onClick={() => handleComplete(job.id)}
-                        disabled={actionInProgress === job.id}
-                        className="text-green-600 hover:text-green-800 mr-3 disabled:opacity-50"
+                        {job.jobNumber}
+                      </a>
+                    </td>
+                    <td className="px-4 py-3 text-gray-600">
+                      {job.customerJobNumber || <span className="text-gray-400">-</span>}
+                    </td>
+                    <td className="px-4 py-3">{job.customerName}</td>
+                    <td className="px-4 py-3 text-gray-600">{job.jobTitle}</td>
+                    <td className="px-4 py-3">
+                      {job.dueDate ? (
+                        <span className={isOverdue ? "text-red-600 font-medium" : isDueSoon ? "text-orange-600" : "text-gray-600"}>
+                          {new Date(job.dueDate).toLocaleDateString()}
+                          {isOverdue && " (overdue)"}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${statusColors[job.status]}`}
                       >
-                        Complete
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(job.id)}
-                      disabled={actionInProgress === job.id}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+                        {statusLabels[job.status]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {job.status === "pending" && (
+                        <button
+                          onClick={() => handleStart(job.id)}
+                          disabled={actionInProgress === job.id}
+                          className="text-blue-600 hover:text-blue-800 mr-3 disabled:opacity-50"
+                        >
+                          Start
+                        </button>
+                      )}
+                      {job.status === "in_progress" && (
+                        <button
+                          onClick={() => handleComplete(job.id)}
+                          disabled={actionInProgress === job.id}
+                          className="text-green-600 hover:text-green-800 mr-3 disabled:opacity-50"
+                        >
+                          Complete
+                        </button>
+                      )}
+                      <a
+                        href={`/jobs/${job.id}`}
+                        className="text-gray-600 hover:text-gray-800"
+                      >
+                        View
+                      </a>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

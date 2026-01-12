@@ -52,6 +52,9 @@ export class JsonStore<T extends { id: string }> implements Repository<T> {
   }
 
   async findAll(): Promise<T[]> {
+    // Always read fresh data for findAll to avoid stale cache issues
+    // in Next.js where different requests may have different instances
+    this.cache = null;
     return this.load();
   }
 

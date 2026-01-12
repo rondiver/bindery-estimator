@@ -6,7 +6,7 @@
 export type QuoteStatus = "draft" | "sent" | "accepted" | "declined";
 
 // Job status lifecycle
-export type JobStatus = "pending" | "in_progress" | "complete";
+export type JobStatus = "pending" | "in_progress" | "complete" | "on_hold" | "cancelled";
 
 export interface Customer {
   id: string;
@@ -41,24 +41,37 @@ export interface Quote {
   notes?: string;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
+  // Job promotion tracking
+  jobId?: string; // FK to Job - set when quote is promoted to job
 }
 
 export interface Job {
   id: string;
   jobNumber: string; // Format: "YYMM-NNNN"
-  quoteId: string;
+  quoteId: string; // FK to Quote - every job must reference a quote
   customerId: string;
   customerName: string;
   jobTitle: string;
   description: string;
   finishedSize: string;
   paperStock?: string;
-  quantity: number; // Selected quantity from quote
+  quantity: number; // Selected quantity from quote (orderQuantity)
   unitPrice: number; // Price at selected quantity
   status: JobStatus;
   createdAt: string; // ISO 8601
   updatedAt: string; // ISO 8601
   completedAt?: string; // ISO 8601
+
+  // Job-specific fields (new)
+  customerJobNumber?: string; // Customer's internal job number
+  poNumber?: string; // Purchase order number
+  partNumber?: string; // Part number reference
+  expectedInDate?: string; // ISO 8601 - when materials expected
+  dueDate?: string; // ISO 8601 - job due date (required for new jobs)
+  allowedSamples?: number; // Units allowed for sampling
+  allowedOvers?: number; // Percentage or fixed overage allowed
+  deliveryInformation?: string; // Shipping/delivery instructions
+  miscellaneousNotes?: string; // Additional job notes
 }
 
 // Input types for creating new entities
@@ -86,6 +99,66 @@ export interface CreateQuoteInput {
   paperStock?: string;
   quantityOptions: CreateQuantityOptionInput[];
   notes?: string;
+}
+
+// Input for updating job-specific fields
+export interface UpdateJobInput {
+  customerJobNumber?: string;
+  poNumber?: string;
+  partNumber?: string;
+  expectedInDate?: string;
+  dueDate?: string;
+  allowedSamples?: number;
+  allowedOvers?: number;
+  deliveryInformation?: string;
+  miscellaneousNotes?: string;
+}
+
+// Run List status lifecycle
+export type RunListStatus = "planned" | "in" | "hold" | "complete";
+
+// Run List item - standalone copy of job data for production tracking
+export interface RunListItem {
+  id: string;
+  jobId: string; // Reference to source Job (for tracking/duplicate prevention only)
+  // Copied from Job (editable independently)
+  jobNumber: string;
+  customerName: string;
+  jobTitle: string;
+  customerPO?: string; // From job.poNumber
+  customerJobNumber?: string;
+  quantity: number;
+  description: string;
+  // Run List specific fields
+  category: string; // Free-text category
+  dueOut?: string; // ISO 8601 - when job should be completed
+  dueIn?: string; // ISO 8601 - when materials expected
+  status: RunListStatus;
+  operations: string[]; // Array of operation codes (tags)
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+// Input for creating a Run List item from a Job
+export interface CreateRunListItemInput {
+  jobId: string;
+  category?: string;
+  dueOut?: string;
+  dueIn?: string;
+  operations?: string[];
+}
+
+// Input for updating a Run List item
+export interface UpdateRunListItemInput {
+  category?: string;
+  dueOut?: string;
+  dueIn?: string;
+  status?: RunListStatus;
+  operations?: string[];
+  customerPO?: string;
+  customerJobNumber?: string;
+  quantity?: number;
+  description?: string;
 }
 
 // Repository interface for swappable storage

@@ -26,6 +26,9 @@ export default function RootLayout({
                   <a href="/jobs" className="text-gray-600 hover:text-gray-900">
                     Jobs
                   </a>
+                  <a href="/run-list" className="text-gray-600 hover:text-gray-900">
+                    Run List
+                  </a>
                   <a href="/customers" className="text-gray-600 hover:text-gray-900">
                     Customers
                   </a>

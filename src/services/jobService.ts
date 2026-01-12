@@ -2,7 +2,7 @@
  * Job service - business logic for job management
  */
 
-import type { Job, Quote, JobStatus, Repository } from "../types";
+import type { Job, Quote, JobStatus, UpdateJobInput, Repository } from "../types";
 import { generateId, generateJobNumber, now } from "../utils/idGenerator";
 
 export class JobService {
@@ -20,8 +20,16 @@ export class JobService {
   }
 
   /**
-   * Create a job from an accepted quote
-   * @param quoteId - The quote to convert
+   * Find job by quote ID
+   */
+  async findByQuoteId(quoteId: string): Promise<Job | null> {
+    const all = await this.jobRepository.findAll();
+    return all.find((j) => j.quoteId === quoteId) ?? null;
+  }
+
+  /**
+   * Create a job from an accepted quote (promote quote to job)
+   * @param quoteId - The quote to promote
    * @param selectedQuantity - The quantity option the customer chose
    */
   async createFromQuote(quoteId: string, selectedQuantity: number): Promise<Job> {
@@ -36,6 +44,16 @@ export class JobService {
       );
     }
 
+    // Check if quote has already been promoted
+    if (quote.jobId) {
+      const existingJob = await this.jobRepository.findById(quote.jobId);
+      if (existingJob) {
+        throw new Error(
+          `Quote ${quote.quoteNumber} has already been promoted to Job ${existingJob.jobNumber}`
+        );
+      }
+    }
+
     // Find the selected quantity option
     const selectedOption = quote.quantityOptions.find(
       (opt) => opt.quantity === selectedQuantity
@@ -47,7 +65,7 @@ export class JobService {
       );
     }
 
-    // Check if job already exists for this quote
+    // Check if job already exists for this quote (double-check)
     const existingJobs = await this.jobRepository.findAll();
     const existingJob = existingJobs.find((j) => j.quoteId === quoteId);
     if (existingJob) {
@@ -77,7 +95,44 @@ export class JobService {
       updatedAt: now(),
     };
 
-    return this.jobRepository.create(job);
+    // Create the job
+    const createdJob = await this.jobRepository.create(job);
+
+    // Update quote with job reference
+    const updatedQuote: Quote = {
+      ...quote,
+      jobId: createdJob.id,
+      updatedAt: now(),
+    };
+    await this.quoteRepository.update(quote.id, updatedQuote);
+
+    return createdJob;
+  }
+
+  /**
+   * Update job-specific fields (not quote-derived fields)
+   */
+  async update(id: string, input: UpdateJobInput): Promise<Job> {
+    const existing = await this.jobRepository.findById(id);
+    if (!existing) {
+      throw new Error(`Job ${id} not found`);
+    }
+
+    const updated: Job = {
+      ...existing,
+      customerJobNumber: input.customerJobNumber ?? existing.customerJobNumber,
+      poNumber: input.poNumber ?? existing.poNumber,
+      partNumber: input.partNumber ?? existing.partNumber,
+      expectedInDate: input.expectedInDate ?? existing.expectedInDate,
+      dueDate: input.dueDate ?? existing.dueDate,
+      allowedSamples: input.allowedSamples ?? existing.allowedSamples,
+      allowedOvers: input.allowedOvers ?? existing.allowedOvers,
+      deliveryInformation: input.deliveryInformation ?? existing.deliveryInformation,
+      miscellaneousNotes: input.miscellaneousNotes ?? existing.miscellaneousNotes,
+      updatedAt: now(),
+    };
+
+    return this.jobRepository.update(id, updated);
   }
 
   async updateStatus(id: string, status: JobStatus): Promise<Job> {
@@ -104,7 +159,30 @@ export class JobService {
     return this.updateStatus(id, "complete");
   }
 
+  async holdJob(id: string): Promise<Job> {
+    return this.updateStatus(id, "on_hold");
+  }
+
+  async cancelJob(id: string): Promise<Job> {
+    return this.updateStatus(id, "cancelled");
+  }
+
   async delete(id: string): Promise<boolean> {
+    // Get job first to update quote
+    const job = await this.jobRepository.findById(id);
+    if (job) {
+      // Remove job reference from quote
+      const quote = await this.quoteRepository.findById(job.quoteId);
+      if (quote && quote.jobId === id) {
+        const updatedQuote: Quote = {
+          ...quote,
+          jobId: undefined,
+          updatedAt: now(),
+        };
+        await this.quoteRepository.update(quote.id, updatedQuote);
+      }
+    }
+
     return this.jobRepository.delete(id);
   }
 
@@ -120,7 +198,15 @@ export class JobService {
 
   async findActiveJobs(): Promise<Job[]> {
     const all = await this.jobRepository.findAll();
-    return all.filter((j) => j.status !== "complete");
+    return all.filter((j) => j.status !== "complete" && j.status !== "cancelled");
+  }
+
+  async findByDueDateRange(startDate: string, endDate: string): Promise<Job[]> {
+    const all = await this.jobRepository.findAll();
+    return all.filter((j) => {
+      if (!j.dueDate) return false;
+      return j.dueDate >= startDate && j.dueDate <= endDate;
+    });
   }
 
   // Calculate job total
