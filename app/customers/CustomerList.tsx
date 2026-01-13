@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { Customer } from "@/src/lib/services";
 import { deleteCustomer } from "../actions/customers";
 import {
@@ -10,7 +10,17 @@ import {
   FilterBar,
   Pagination,
   ResultsCounter,
-} from "../components";
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableEmpty,
+  Button,
+  EmptyState,
+  LoadingSpinner,
+} from "../components/ui";
 import { useFilterParams } from "../hooks/useFilterParams";
 
 const ITEMS_PER_PAGE = 10;
@@ -89,15 +99,13 @@ function CustomerListContent({ customers }: { customers: Customer[] }) {
           value={search}
           onChange={(v) => setParam("search", v)}
           placeholder="Search name or email..."
+          className="w-64"
         />
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Sort:</span>
-          <SortSelect
-            options={sortOptions}
-            value={sort}
-            onChange={(v) => setParam("sort", v)}
-          />
-        </div>
+        <SortSelect
+          options={sortOptions}
+          value={sort}
+          onChange={(v) => setParam("sort", v)}
+        />
       </FilterBar>
 
       <div className="flex items-center justify-between">
@@ -109,83 +117,77 @@ function CustomerListContent({ customers }: { customers: Customer[] }) {
       </div>
 
       {paginatedCustomers.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          {search ? (
-            <p className="text-gray-500">No customers match your search.</p>
-          ) : (
-            <>
-              <p className="text-gray-500">No customers yet.</p>
-              <a
-                href="/customers/new"
-                className="text-blue-600 hover:underline mt-2 inline-block"
-              >
-                Add your first customer
-              </a>
-            </>
-          )}
-        </div>
+        <EmptyState
+          title={search ? "No customers found" : "No customers yet"}
+          description={
+            search
+              ? "Try adjusting your search terms"
+              : "Get started by adding your first customer"
+          }
+          action={
+            !search && (
+              <Link href="/customers/new">
+                <Button>Add Customer</Button>
+              </Link>
+            )
+          }
+        />
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Name
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Contact
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Email
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Phone
-                </th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginatedCustomers.map((customer) => (
-                <tr key={customer.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/customers/${customer.id}`}
-                      className="text-blue-600 hover:underline font-medium"
-                    >
-                      {customer.name}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {customer.contactName || "-"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {customer.email || "-"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-600">
-                    {customer.phone || "-"}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <a
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedCustomers.map((customer) => (
+              <TableRow key={customer.id} clickable>
+                <TableCell>
+                  <Link
+                    href={`/customers/${customer.id}`}
+                    className="text-accent hover:text-accent-dark font-medium"
+                  >
+                    {customer.name}
+                  </Link>
+                </TableCell>
+                <TableCell variant="muted">
+                  {customer.contactName || "-"}
+                </TableCell>
+                <TableCell variant="muted">
+                  {customer.email || "-"}
+                </TableCell>
+                <TableCell variant="muted">
+                  {customer.phone || "-"}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
+                    <Link
                       href={`/customers/${customer.id}/edit`}
-                      className="text-gray-600 hover:text-gray-900 mr-3"
+                      className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors"
                     >
                       Edit
-                    </a>
+                    </Link>
                     <button
                       onClick={() => handleDelete(customer.id)}
                       disabled={deleting === customer.id}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                      className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50 transition-colors"
                     >
-                      {deleting === customer.id ? "..." : "Delete"}
+                      {deleting === customer.id ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        "Delete"
+                      )}
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {totalPages > 1 && (
@@ -203,7 +205,7 @@ function CustomerListContent({ customers }: { customers: Customer[] }) {
 
 export function CustomerList({ customers }: { customers: Customer[] }) {
   return (
-    <Suspense fallback={<div className="text-gray-500">Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner size="lg" className="mx-auto" />}>
       <CustomerListContent customers={customers} />
     </Suspense>
   );

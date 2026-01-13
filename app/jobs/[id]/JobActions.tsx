@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Job, JobStatus } from "@/src/lib/services";
 import { updateJobStatus, deleteJob } from "../../actions/jobs";
 import { addJobToRunList } from "../../actions/runList";
+import { Button, Select } from "../../components/ui";
 
 interface JobActionsProps {
   job: Job;
@@ -73,124 +74,120 @@ export function JobActions({ job, isInRunList }: JobActionsProps) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm">
+        <div className="p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm">
           {error}
         </div>
       )}
 
       {/* Status Dropdown */}
       <div>
-        <label htmlFor="status" className="block text-sm text-gray-600 mb-1">
-          Change Status
-        </label>
-        <select
+        <Select
+          label="Change Status"
           id="status"
           value={job.status}
           onChange={(e) => handleStatusChange(e.target.value as JobStatus)}
           disabled={updating}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {statusOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          options={statusOptions}
+        />
         {updating && (
-          <p className="text-xs text-gray-500 mt-1">Updating...</p>
+          <p className="text-xs text-slate-500 mt-1">Updating...</p>
         )}
       </div>
 
       {/* Quick Status Buttons */}
       <div className="space-y-2">
         {job.status === "pending" && (
-          <button
+          <Button
             onClick={() => handleStatusChange("in_progress")}
             disabled={updating}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="w-full"
           >
             Start Job
-          </button>
+          </Button>
         )}
         {job.status === "in_progress" && (
           <>
-            <button
+            <Button
               onClick={() => handleStatusChange("complete")}
               disabled={updating}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              variant="primary"
+              className="w-full"
             >
               Mark Complete
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => handleStatusChange("on_hold")}
               disabled={updating}
-              className="w-full px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50"
+              variant="secondary"
+              className="w-full"
             >
               Put On Hold
-            </button>
+            </Button>
           </>
         )}
         {job.status === "on_hold" && (
-          <button
+          <Button
             onClick={() => handleStatusChange("in_progress")}
             disabled={updating}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="w-full"
           >
             Resume Job
-          </button>
+          </Button>
         )}
         {(job.status === "pending" || job.status === "in_progress" || job.status === "on_hold") && (
-          <button
+          <Button
             onClick={() => {
               if (confirm(`Are you sure you want to cancel job ${job.jobNumber}?`)) {
                 handleStatusChange("cancelled");
               }
             }}
             disabled={updating}
-            className="w-full px-4 py-2 text-red-600 border border-red-200 rounded hover:bg-red-50 disabled:opacity-50"
+            variant="danger"
+            className="w-full"
           >
             Cancel Job
-          </button>
+          </Button>
         )}
       </div>
 
-      <hr className="border-gray-200" />
+      <hr className="border-slate-200" />
 
       {/* Run List Actions */}
       {isInRunList ? (
-        <Link
-          href="/run-list"
-          className="block w-full px-4 py-2 text-center bg-purple-100 text-purple-800 border border-purple-200 rounded hover:bg-purple-200"
-        >
-          View in Run List
+        <Link href="/run-list" className="block">
+          <Button variant="secondary" className="w-full bg-accent-50 text-accent border-accent/20 hover:bg-accent-100">
+            View in Run List
+          </Button>
         </Link>
       ) : (
-        <button
+        <Button
           onClick={handleAddToRunList}
           disabled={addingToRunList || job.status === "complete" || job.status === "cancelled"}
-          className="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+          isLoading={addingToRunList}
+          className="w-full"
         >
-          {addingToRunList ? "Adding..." : "Add to Run List"}
-        </button>
+          Add to Run List
+        </Button>
       )}
 
-      <hr className="border-gray-200" />
+      <hr className="border-slate-200" />
 
       {/* Navigation Actions */}
-      <a
-        href={`/jobs/${job.id}/edit`}
-        className="block w-full px-4 py-2 text-center border border-gray-300 rounded hover:bg-gray-50"
-      >
-        Edit Job
-      </a>
+      <Link href={`/jobs/${job.id}/edit`} className="block">
+        <Button variant="secondary" className="w-full">
+          Edit Job
+        </Button>
+      </Link>
 
-      <button
+      <Button
         onClick={handleDelete}
         disabled={deleting}
-        className="w-full px-4 py-2 text-red-600 border border-red-200 rounded hover:bg-red-50 disabled:opacity-50"
+        isLoading={deleting}
+        variant="danger"
+        className="w-full"
       >
-        {deleting ? "Deleting..." : "Delete Job"}
-      </button>
+        Delete Job
+      </Button>
     </div>
   );
 }

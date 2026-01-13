@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Customer, CreateCustomerInput } from "@/src/lib/services";
 import { createCustomer, updateCustomer, checkForDuplicates } from "../actions/customers";
+import { Card, Input, Textarea, Button } from "../components/ui";
 
 interface DuplicateWarning {
   type: "email" | "name";
@@ -91,151 +93,117 @@ export function CustomerForm({ customer }: CustomerFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white rounded-lg border border-gray-200 p-6 max-w-2xl"
-    >
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">
-          {error}
-        </div>
-      )}
+    <Card variant="elevated" className="max-w-2xl">
+      <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
 
-      {duplicateWarnings.length > 0 && (
-        <div className="mb-4 p-3 bg-yellow-50 text-yellow-800 rounded border border-yellow-200">
-          <p className="font-medium">Potential duplicate detected:</p>
-          <ul className="mt-1 text-sm list-disc list-inside">
-            {duplicateWarnings.map((warning, i) => (
-              <li key={i}>
-                {warning.type === "email" ? (
-                  <>
-                    Email already used by{" "}
-                    <a
-                      href={`/customers/${warning.existingCustomer.id}`}
-                      className="underline hover:text-yellow-900"
-                    >
-                      {warning.existingCustomer.name}
-                    </a>
-                  </>
-                ) : (
-                  <>
-                    Company name matches{" "}
-                    <a
-                      href={`/customers/${warning.existingCustomer.id}`}
-                      className="underline hover:text-yellow-900"
-                    >
-                      {warning.existingCustomer.name}
-                    </a>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+        {duplicateWarnings.length > 0 && (
+          <div className="mb-6 p-4 bg-amber-50 text-amber-800 rounded-lg border border-amber-200">
+            <div className="flex items-start gap-2">
+              <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <div>
+                <p className="font-medium">Potential duplicate detected</p>
+                <ul className="mt-1 text-sm list-disc list-inside">
+                  {duplicateWarnings.map((warning, i) => (
+                    <li key={i}>
+                      {warning.type === "email" ? (
+                        <>
+                          Email already used by{" "}
+                          <Link
+                            href={`/customers/${warning.existingCustomer.id}`}
+                            className="underline hover:text-amber-900 font-medium"
+                          >
+                            {warning.existingCustomer.name}
+                          </Link>
+                        </>
+                      ) : (
+                        <>
+                          Company name matches{" "}
+                          <Link
+                            href={`/customers/${warning.existingCustomer.id}`}
+                            className="underline hover:text-amber-900 font-medium"
+                          >
+                            {warning.existingCustomer.name}
+                          </Link>
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-            Company Name *
-          </label>
-          <input
-            type="text"
-            id="name"
+        <div className="space-y-5">
+          <Input
+            label="Company Name"
             name="name"
             required
             defaultValue={customer?.name}
             onBlur={handleBlur}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
 
-        <div>
-          <label htmlFor="contactName" className="block text-sm font-medium text-gray-700 mb-1">
-            Contact Name
-          </label>
-          <input
-            type="text"
-            id="contactName"
+          <Input
+            label="Contact Name"
             name="contactName"
             defaultValue={customer?.contactName}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              defaultValue={customer?.email}
-              onBlur={handleBlur}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {checkingDuplicates && (
-              <p className="text-xs text-gray-500 mt-1">Checking for duplicates...</p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
-            <input
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Input
+                label="Email"
+                type="email"
+                name="email"
+                defaultValue={customer?.email}
+                onBlur={handleBlur}
+                helperText={checkingDuplicates ? "Checking for duplicates..." : undefined}
+              />
+            </div>
+            <Input
+              label="Phone"
               type="tel"
-              id="phone"
               name="phone"
               defaultValue={customer?.phone}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-        </div>
 
-        <div>
-          <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-            Address
-          </label>
-          <textarea
-            id="address"
+          <Textarea
+            label="Address"
             name="address"
             rows={2}
             defaultValue={customer?.address}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
 
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-            Notes
-          </label>
-          <textarea
-            id="notes"
+          <Textarea
+            label="Notes"
             name="notes"
             rows={3}
             defaultValue={customer?.notes}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-      </div>
 
-      <div className="mt-6 flex gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : customer ? "Update Customer" : "Create Customer"}
-        </button>
-        <a
-          href="/customers"
-          className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-        >
-          Cancel
-        </a>
-      </div>
-    </form>
+        <div className="mt-8 flex items-center gap-3 pt-6 border-t border-slate-100">
+          <Button type="submit" isLoading={saving}>
+            {customer ? "Update Customer" : "Create Customer"}
+          </Button>
+          <Link href="/customers">
+            <Button variant="secondary">Cancel</Button>
+          </Link>
+        </div>
+      </form>
+    </Card>
   );
 }

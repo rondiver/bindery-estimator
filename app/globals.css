@@ -1,3 +1,119 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    @apply antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  body {
+    @apply bg-surface text-slate-900 font-sans;
+  }
+
+  /* Focus ring styles - consistent across all interactive elements */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-surface;
+  }
+
+  /* Selection styles */
+  ::selection {
+    @apply bg-accent-100 text-accent-900;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* Section label styling - JetBrains Mono, uppercase, wide tracking */
+  .section-label {
+    @apply font-mono text-label-md uppercase tracking-widest text-slate-500;
+  }
+
+  /* Gradient border effect for featured cards */
+  .gradient-border {
+    @apply relative;
+  }
+  .gradient-border::before {
+    content: '';
+    @apply absolute inset-0 rounded-xl p-[2px];
+    background: linear-gradient(135deg, #0052FF 0%, #4D7CFF 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+  }
+
+  /* Dot pattern overlay for inverted sections */
+  .dot-pattern {
+    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Inverted section styling */
+  .section-inverted {
+    @apply bg-surface-inverted text-white;
+  }
+  .section-inverted .section-label {
+    @apply text-slate-400;
+  }
+
+  /* Card hover state enhancement */
+  .card-interactive {
+    @apply transition-all duration-200;
+  }
+  .card-interactive:hover {
+    @apply shadow-elevation-4 -translate-y-0.5;
+  }
+}
+
+@layer utilities {
+  /* Text gradient utility - for accent text highlights */
+  .text-gradient {
+    @apply bg-gradient-accent bg-clip-text text-transparent;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Custom thin scrollbar */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.slate.300') transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: theme('colors.slate.300');
+    border-radius: 3px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: theme('colors.slate.400');
+  }
+
+  /* Backdrop blur fallback */
+  .backdrop-blur-fallback {
+    @apply backdrop-blur-md;
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+  @supports (backdrop-filter: blur(12px)) {
+    .backdrop-blur-fallback {
+      background-color: rgba(255, 255, 255, 0.7);
+    }
+  }
+}

@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type {
   Customer,
   Quote,
   CreateQuantityOptionInput,
 } from "@/src/lib/services";
 import { updateQuote } from "../../../actions/quotes";
+import { Card, CardContent, Input, Textarea, Button, Badge } from "../../../components/ui";
 
 interface QuoteEditFormProps {
   quote: Quote;
@@ -89,234 +91,175 @@ export function QuoteEditForm({ quote, customers }: QuoteEditFormProps) {
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white rounded-lg border border-gray-200 p-6 max-w-3xl"
-    >
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">
-          {error}
-        </div>
-      )}
+    <Card variant="elevated" className="max-w-3xl">
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm">
+              {error}
+            </div>
+          )}
 
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Customer
-            </label>
-            <input
-              type="text"
-              value={quote.customerName}
-              disabled
-              className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50 text-gray-500"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Customer cannot be changed. Create a new quote for a different
-              customer.
-            </p>
-          </div>
-          <div>
-            <label
-              htmlFor="customerNumber"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Customer PO/Job #
-            </label>
-            <input
-              type="text"
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Input
+                label="Customer"
+                value={quote.customerName}
+                disabled
+                helperText="Customer cannot be changed. Create a new quote for a different customer."
+              />
+            </div>
+            <Input
+              label="Customer PO/Job #"
               id="customerNumber"
               name="customerNumber"
               defaultValue={quote.customerNumber}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-        </div>
 
-        <div>
-          <label
-            htmlFor="jobTitle"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Job Title *
-          </label>
-          <input
-            type="text"
+          <Input
+            label="Job Title"
             id="jobTitle"
             name="jobTitle"
             required
             defaultValue={quote.jobTitle}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
 
-        <div>
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Description *
-          </label>
-          <textarea
+          <Textarea
+            label="Description"
             id="description"
             name="description"
             required
             rows={4}
             defaultValue={quote.description}
             placeholder="Describe the bindery services to be performed..."
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="finishedSize"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Finished Size *
-            </label>
-            <input
-              type="text"
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Finished Size"
               id="finishedSize"
               name="finishedSize"
               required
               placeholder="e.g., 8.5 x 11"
               defaultValue={quote.finishedSize}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-          <div>
-            <label
-              htmlFor="paperStock"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Paper Stock
-            </label>
-            <input
-              type="text"
+            <Input
+              label="Paper Stock"
               id="paperStock"
               name="paperStock"
               placeholder="e.g., 80# gloss text"
               defaultValue={quote.paperStock}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Quantity Options *
-          </label>
-          <div className="space-y-2">
-            {quantityOptions.map((opt, index) => (
-              <div key={index} className="flex gap-3 items-center">
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={opt.quantity}
-                    onChange={(e) =>
-                      updateQuantityOption(
-                        index,
-                        "quantity",
-                        parseInt(e.target.value) || 0
-                      )
-                    }
-                    placeholder="Quantity"
-                    min={1}
-                    className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <span className="text-gray-500">@</span>
-                <div className="flex-1">
-                  <div className="relative">
-                    <span className="absolute left-3 top-2 text-gray-500">
-                      $
-                    </span>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Quantity Options *
+            </label>
+            <div className="space-y-3">
+              {quantityOptions.map((opt, index) => (
+                <div key={index} className="flex gap-3 items-center">
+                  <div className="flex-1">
                     <input
                       type="number"
-                      value={opt.unitPrice}
+                      value={opt.quantity}
                       onChange={(e) =>
                         updateQuantityOption(
                           index,
-                          "unitPrice",
-                          parseFloat(e.target.value) || 0
+                          "quantity",
+                          parseInt(e.target.value) || 0
                         )
                       }
-                      placeholder="Unit price"
-                      step="0.001"
-                      min={0}
-                      className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Quantity"
+                      min={1}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm
+                                 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:border-accent
+                                 transition-shadow"
                     />
                   </div>
+                  <span className="text-slate-500">@</span>
+                  <div className="flex-1">
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-slate-500">
+                        $
+                      </span>
+                      <input
+                        type="number"
+                        value={opt.unitPrice}
+                        onChange={(e) =>
+                          updateQuantityOption(
+                            index,
+                            "unitPrice",
+                            parseFloat(e.target.value) || 0
+                          )
+                        }
+                        placeholder="Unit price"
+                        step="0.001"
+                        min={0}
+                        className="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg text-sm
+                                   focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:border-accent
+                                   transition-shadow"
+                      />
+                    </div>
+                  </div>
+                  <span className="text-slate-600 w-28 text-right font-medium">
+                    = ${(opt.quantity * opt.unitPrice).toFixed(2)}
+                  </span>
+                  {quantityOptions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeQuantityOption(index)}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
-                <span className="text-gray-600 w-24 text-right">
-                  = ${(opt.quantity * opt.unitPrice).toFixed(2)}
-                </span>
-                {quantityOptions.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeQuantityOption(index)}
-                    className="text-red-600 hover:text-red-800 px-2"
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
-            ))}
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addQuantityOption}
+              className="mt-3 text-accent hover:text-accent-dark text-sm font-medium transition-colors"
+            >
+              + Add quantity option
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={addQuantityOption}
-            className="mt-2 text-blue-600 hover:text-blue-800 text-sm"
-          >
-            + Add quantity option
-          </button>
-        </div>
 
-        <div>
-          <label
-            htmlFor="notes"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Notes
-          </label>
-          <textarea
+          <Textarea
+            label="Notes"
             id="notes"
             name="notes"
             rows={2}
             defaultValue={quote.notes}
-            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-        </div>
 
-        {/* Status Info */}
-        <div className="p-4 bg-gray-50 rounded border border-gray-200">
-          <p className="text-sm text-gray-600">
-            <strong>Current Status:</strong>{" "}
-            <span className="capitalize">{quote.status}</span>
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            To change status, use the actions on the quote detail page.
-          </p>
-        </div>
-      </div>
+          {/* Status Info */}
+          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-600 font-medium">Current Status:</span>
+              <Badge variant={quote.status} rounded>
+                {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              To change status, use the actions on the quote detail page.
+            </p>
+          </div>
 
-      <div className="mt-6 flex gap-3">
-        <button
-          type="submit"
-          disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-        <a
-          href={`/quotes/${quote.id}`}
-          className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
-        >
-          Cancel
-        </a>
-      </div>
-    </form>
+          <div className="flex gap-3 pt-4 border-t border-slate-200">
+            <Button type="submit" disabled={saving} isLoading={saving}>
+              Save Changes
+            </Button>
+            <Link href={`/quotes/${quote.id}`}>
+              <Button type="button" variant="secondary">
+                Cancel
+              </Button>
+            </Link>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

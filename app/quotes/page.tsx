@@ -1,20 +1,27 @@
+import Link from "next/link";
 import { getQuotes } from "../actions/quotes";
 import { QuoteList } from "./QuoteList";
+import { PageHeader, Button } from "../components/ui";
 
 export default async function QuotesPage() {
   const quotes = await getQuotes();
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Quotes</h2>
-        <a
-          href="/quotes/new"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          New Quote
-        </a>
-      </div>
+      <PageHeader
+        title="Quotes"
+        subtitle={`${quotes.length} total quotes`}
+        actions={
+          <Link href="/quotes/new">
+            <Button>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Quote
+            </Button>
+          </Link>
+        }
+      />
       <QuoteList quotes={quotes} />
     </div>
   );

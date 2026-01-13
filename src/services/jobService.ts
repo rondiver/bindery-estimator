@@ -3,7 +3,7 @@
  */
 
 import type { Job, Quote, JobStatus, UpdateJobInput, Repository } from "../types";
-import { generateId, generateJobNumber, now } from "../utils/idGenerator";
+import { generateId, now } from "../utils/idGenerator";
 
 export class JobService {
   constructor(
@@ -65,18 +65,17 @@ export class JobService {
       );
     }
 
-    // Check if job already exists for this quote (double-check)
+    // Check for duplicate job number (jobs inherit quote numbers)
     const existingJobs = await this.jobRepository.findAll();
-    const existingJob = existingJobs.find((j) => j.quoteId === quoteId);
-    if (existingJob) {
+    const duplicateJob = existingJobs.find((j) => j.jobNumber === quote.quoteNumber);
+    if (duplicateJob) {
       throw new Error(
-        `Job ${existingJob.jobNumber} already exists for quote ${quote.quoteNumber}`
+        `A job with number ${quote.quoteNumber} already exists`
       );
     }
 
-    // Generate job number
-    const existingNumbers = existingJobs.map((j) => j.jobNumber);
-    const jobNumber = generateJobNumber(existingNumbers);
+    // Use quote number as job number (jobs inherit quote numbers)
+    const jobNumber = quote.quoteNumber;
 
     const job: Job = {
       id: generateId(),

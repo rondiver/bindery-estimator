@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, Suspense } from "react";
+import Link from "next/link";
 import type { Quote } from "@/src/lib/services";
 import { deleteQuote, updateQuoteStatus } from "../actions/quotes";
 import {
@@ -9,17 +10,20 @@ import {
   FilterBar,
   Pagination,
   ResultsCounter,
-} from "../components";
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Badge,
+  Button,
+  EmptyState,
+  LoadingSpinner,
+} from "../components/ui";
 import { useFilterParams } from "../hooks/useFilterParams";
 
 const ITEMS_PER_PAGE = 10;
-
-const statusColors: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-700",
-  sent: "bg-blue-100 text-blue-700",
-  accepted: "bg-green-100 text-green-700",
-  declined: "bg-red-100 text-red-700",
-};
 
 const statusOptions = [
   { value: "draft", label: "Draft" },
@@ -103,9 +107,10 @@ function QuoteListContent({ quotes }: { quotes: Quote[] }) {
           value={search}
           onChange={(v) => setParam("search", v)}
           placeholder="Search quote #, customer, title..."
+          className="w-64"
         />
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Status:</span>
+          <span className="text-sm text-slate-500">Status:</span>
           <StatusFilter
             options={statusOptions}
             value={status}
@@ -123,75 +128,61 @@ function QuoteListContent({ quotes }: { quotes: Quote[] }) {
       </div>
 
       {paginatedQuotes.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          {search || status ? (
-            <p className="text-gray-500">No quotes match your filters.</p>
-          ) : (
-            <>
-              <p className="text-gray-500">No quotes yet.</p>
-              <a
-                href="/quotes/new"
-                className="text-blue-600 hover:underline mt-2 inline-block"
-              >
-                Create your first quote
-              </a>
-            </>
-          )}
-        </div>
+        <EmptyState
+          title={search || status ? "No quotes found" : "No quotes yet"}
+          description={
+            search || status
+              ? "Try adjusting your filters"
+              : "Get started by creating your first quote"
+          }
+          action={
+            !(search || status) && (
+              <Link href="/quotes/new">
+                <Button>Create Quote</Button>
+              </Link>
+            )
+          }
+        />
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Quote #
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Customer
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Job Title
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Status
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Updated
-                </th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginatedQuotes.map((quote) => (
-                <tr key={quote.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <a
-                      href={`/quotes/${quote.id}`}
-                      className="text-blue-600 hover:underline font-mono"
-                    >
-                      {formatQuoteNumber(quote)}
-                    </a>
-                  </td>
-                  <td className="px-4 py-3">{quote.customerName}</td>
-                  <td className="px-4 py-3 text-gray-600">{quote.jobTitle}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${statusColors[quote.status]}`}
-                    >
-                      {quote.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-gray-500 text-sm">
-                    {new Date(quote.updatedAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-right">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Quote #</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Job Title</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Updated</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedQuotes.map((quote) => (
+              <TableRow key={quote.id} clickable>
+                <TableCell variant="mono">
+                  <Link
+                    href={`/quotes/${quote.id}`}
+                    className="hover:text-accent-dark"
+                  >
+                    {formatQuoteNumber(quote)}
+                  </Link>
+                </TableCell>
+                <TableCell>{quote.customerName}</TableCell>
+                <TableCell variant="muted">{quote.jobTitle}</TableCell>
+                <TableCell>
+                  <Badge variant={quote.status as any} rounded>
+                    {quote.status.charAt(0).toUpperCase() + quote.status.slice(1)}
+                  </Badge>
+                </TableCell>
+                <TableCell variant="muted">
+                  {new Date(quote.updatedAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-2">
                     {quote.status === "draft" && (
                       <button
                         onClick={() => handleStatusChange(quote.id, "sent")}
                         disabled={actionInProgress === quote.id}
-                        className="text-blue-600 hover:text-blue-800 mr-3 disabled:opacity-50"
+                        className="text-accent hover:text-accent-dark text-sm font-medium disabled:opacity-50 transition-colors"
                       >
                         Send
                       </button>
@@ -201,38 +192,42 @@ function QuoteListContent({ quotes }: { quotes: Quote[] }) {
                         <button
                           onClick={() => handleStatusChange(quote.id, "accepted")}
                           disabled={actionInProgress === quote.id}
-                          className="text-green-600 hover:text-green-800 mr-3 disabled:opacity-50"
+                          className="text-green-600 hover:text-green-700 text-sm font-medium disabled:opacity-50 transition-colors"
                         >
                           Accept
                         </button>
                         <button
                           onClick={() => handleStatusChange(quote.id, "declined")}
                           disabled={actionInProgress === quote.id}
-                          className="text-red-600 hover:text-red-800 mr-3 disabled:opacity-50"
+                          className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50 transition-colors"
                         >
                           Decline
                         </button>
                       </>
                     )}
-                    <a
+                    <Link
                       href={`/quotes/${quote.id}/edit`}
-                      className="text-gray-600 hover:text-gray-900 mr-3"
+                      className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors"
                     >
                       Edit
-                    </a>
+                    </Link>
                     <button
                       onClick={() => handleDelete(quote.id)}
                       disabled={actionInProgress === quote.id}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                      className="text-red-600 hover:text-red-700 text-sm font-medium disabled:opacity-50 transition-colors"
                     >
-                      Delete
+                      {actionInProgress === quote.id ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        "Delete"
+                      )}
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
 
       {totalPages > 1 && (
@@ -250,7 +245,7 @@ function QuoteListContent({ quotes }: { quotes: Quote[] }) {
 
 export function QuoteList({ quotes }: { quotes: Quote[] }) {
   return (
-    <Suspense fallback={<div className="text-gray-500">Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner size="lg" className="mx-auto" />}>
       <QuoteListContent quotes={quotes} />
     </Suspense>
   );

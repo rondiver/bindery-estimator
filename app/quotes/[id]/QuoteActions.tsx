@@ -10,6 +10,7 @@ import {
   createQuoteRevision,
 } from "../../actions/quotes";
 import { createJobFromQuote } from "../../actions/jobs";
+import { Button, Select } from "../../components/ui";
 
 interface QuoteActionsProps {
   quote: Quote;
@@ -97,93 +98,87 @@ export function QuoteActions({ quote, linkedJob }: QuoteActionsProps) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 bg-red-50 text-red-700 rounded border border-red-200 text-sm">
+        <div className="p-3 bg-red-50 text-red-700 rounded-lg border border-red-200 text-sm">
           {error}
         </div>
       )}
 
       {/* Status Dropdown */}
       <div>
-        <label htmlFor="status" className="block text-sm text-gray-600 mb-1">
-          Change Status
-        </label>
-        <select
+        <Select
+          label="Change Status"
           id="status"
           value={quote.status}
           onChange={(e) => handleStatusChange(e.target.value as QuoteStatus)}
           disabled={updating}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        >
-          {statusOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+          options={statusOptions}
+        />
         {updating && (
-          <p className="text-xs text-gray-500 mt-1">Updating...</p>
+          <p className="text-xs text-slate-500 mt-1">Updating...</p>
         )}
       </div>
 
       {/* Quick Status Buttons */}
       {quote.status === "draft" && (
-        <button
+        <Button
           onClick={() => handleStatusChange("sent")}
           disabled={updating}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          className="w-full"
         >
           Mark as Sent
-        </button>
+        </Button>
       )}
 
       {quote.status === "sent" && (
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => handleStatusChange("accepted")}
             disabled={updating}
-            className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            variant="primary"
+            className="flex-1"
           >
             Accept
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => handleStatusChange("declined")}
             disabled={updating}
-            className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
+            variant="danger"
+            className="flex-1"
           >
             Decline
-          </button>
+          </Button>
         </div>
       )}
 
       {/* Linked Job or Create Job from Accepted Quote */}
       {linkedJob ? (
-        <div className="p-3 bg-purple-50 rounded border border-purple-200 space-y-2">
-          <p className="text-sm font-medium text-purple-800">
+        <div className="p-4 bg-accent-50 rounded-lg border border-accent/20 space-y-3">
+          <p className="text-sm font-medium text-accent">
             Promoted to Job
           </p>
-          <Link
-            href={`/jobs/${linkedJob.id}`}
-            className="block w-full px-4 py-2 text-center bg-purple-600 text-white rounded hover:bg-purple-700 font-mono"
-          >
-            View Job {linkedJob.jobNumber}
+          <Link href={`/jobs/${linkedJob.id}`} className="block">
+            <Button variant="primary" className="w-full font-mono">
+              View Job {linkedJob.jobNumber}
+            </Button>
           </Link>
         </div>
       ) : quote.status === "accepted" && (
         <>
           {!showJobModal ? (
-            <button
+            <Button
               onClick={() => setShowJobModal(true)}
-              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              className="w-full"
             >
               Create Job
-            </button>
+            </Button>
           ) : (
-            <div className="p-3 bg-gray-50 rounded border border-gray-200 space-y-3">
-              <p className="text-sm font-medium">Select quantity for job:</p>
+            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+              <p className="text-sm font-medium text-slate-700">Select quantity for job:</p>
               <select
                 value={selectedQuantity}
                 onChange={(e) => setSelectedQuantity(parseInt(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm
+                           focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:border-accent"
               >
                 {quote.quantityOptions.map((opt) => (
                   <option key={opt.id} value={opt.quantity}>
@@ -193,52 +188,58 @@ export function QuoteActions({ quote, linkedJob }: QuoteActionsProps) {
                 ))}
               </select>
               <div className="flex gap-2">
-                <button
+                <Button
                   onClick={handleCreateJob}
                   disabled={creatingJob}
-                  className="flex-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 text-sm"
+                  isLoading={creatingJob}
+                  size="sm"
+                  className="flex-1"
                 >
-                  {creatingJob ? "Creating..." : "Create Job"}
-                </button>
-                <button
+                  Create Job
+                </Button>
+                <Button
                   onClick={() => setShowJobModal(false)}
-                  className="px-3 py-2 border border-gray-300 rounded hover:bg-gray-100 text-sm"
+                  variant="secondary"
+                  size="sm"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}
         </>
       )}
 
-      <hr className="border-gray-200" />
+      <hr className="border-slate-200" />
 
       {/* Create Revision */}
-      <button
+      <Button
         onClick={handleCreateRevision}
         disabled={creatingRevision}
-        className="w-full px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50"
+        isLoading={creatingRevision}
+        variant="secondary"
+        className="w-full"
       >
-        {creatingRevision ? "Creating..." : "Create Revision"}
-      </button>
+        Create Revision
+      </Button>
 
       {/* Edit */}
-      <a
-        href={`/quotes/${quote.id}/edit`}
-        className="block w-full px-4 py-2 text-center border border-gray-300 rounded hover:bg-gray-50"
-      >
-        Edit Quote
-      </a>
+      <Link href={`/quotes/${quote.id}/edit`} className="block">
+        <Button variant="secondary" className="w-full">
+          Edit Quote
+        </Button>
+      </Link>
 
       {/* Delete */}
-      <button
+      <Button
         onClick={handleDelete}
         disabled={deleting}
-        className="w-full px-4 py-2 text-red-600 border border-red-200 rounded hover:bg-red-50 disabled:opacity-50"
+        isLoading={deleting}
+        variant="danger"
+        className="w-full"
       >
-        {deleting ? "Deleting..." : "Delete Quote"}
-      </button>
+        Delete Quote
+      </Button>
     </div>
   );
 }

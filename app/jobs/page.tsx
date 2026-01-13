@@ -1,14 +1,17 @@
 import { getJobs } from "../actions/jobs";
 import { JobList } from "./JobList";
+import { PageHeader } from "../components/ui";
 
 export default async function JobsPage() {
   const jobs = await getJobs();
+  const activeJobs = jobs.filter(j => !["complete", "cancelled"].includes(j.status));
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Jobs</h2>
-      </div>
+      <PageHeader
+        title="Jobs"
+        subtitle={`${activeJobs.length} active jobs, ${jobs.length} total`}
+      />
       <JobList jobs={jobs} />
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, Suspense } from "react";
+import Link from "next/link";
 import type { Job } from "@/src/lib/services";
 import { startJob, completeJob } from "../actions/jobs";
 import {
@@ -9,18 +10,19 @@ import {
   FilterBar,
   Pagination,
   ResultsCounter,
-} from "../components";
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Badge,
+  EmptyState,
+  LoadingSpinner,
+} from "../components/ui";
 import { useFilterParams } from "../hooks/useFilterParams";
 
 const ITEMS_PER_PAGE = 10;
-
-const statusColors: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  in_progress: "bg-blue-100 text-blue-700",
-  complete: "bg-green-100 text-green-700",
-  on_hold: "bg-orange-100 text-orange-700",
-  cancelled: "bg-red-100 text-red-700",
-};
 
 const statusLabels: Record<string, string> = {
   pending: "Pending",
@@ -124,9 +126,10 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
           value={search}
           onChange={(v) => setParam("search", v)}
           placeholder="Search job #, customer, title..."
+          className="w-64"
         />
         <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Status:</span>
+          <span className="text-sm text-slate-500">Status:</span>
           <StatusFilter
             options={statusOptions}
             value={status}
@@ -144,114 +147,98 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
       </div>
 
       {paginatedJobs.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          {search || status ? (
-            <p className="text-gray-500">No jobs match your filters.</p>
-          ) : (
-            <>
-              <p className="text-gray-500">No jobs yet.</p>
-              <p className="text-gray-400 text-sm mt-1">
-                Jobs are created from accepted quotes.
-              </p>
-            </>
-          )}
-        </div>
+        <EmptyState
+          title={search || status ? "No jobs found" : "No jobs yet"}
+          description={
+            search || status
+              ? "Try adjusting your filters"
+              : "Jobs are created from accepted quotes"
+          }
+        />
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Job #
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Customer Job #
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Customer
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Title
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Due Date
-                </th>
-                <th className="text-left px-4 py-3 text-sm font-medium text-gray-600">
-                  Status
-                </th>
-                <th className="text-right px-4 py-3 text-sm font-medium text-gray-600">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {paginatedJobs.map((job) => {
-                const isDueSoon = job.dueDate && new Date(job.dueDate) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
-                const isOverdue = job.dueDate && new Date(job.dueDate) < new Date() && job.status !== "complete" && job.status !== "cancelled";
-                return (
-                  <tr key={job.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <a
-                        href={`/jobs/${job.id}`}
-                        className="text-blue-600 hover:underline font-mono"
-                      >
-                        {job.jobNumber}
-                      </a>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">
-                      {job.customerJobNumber || <span className="text-gray-400">-</span>}
-                    </td>
-                    <td className="px-4 py-3">{job.customerName}</td>
-                    <td className="px-4 py-3 text-gray-600">{job.jobTitle}</td>
-                    <td className="px-4 py-3">
-                      {job.dueDate ? (
-                        <span className={isOverdue ? "text-red-600 font-medium" : isDueSoon ? "text-orange-600" : "text-gray-600"}>
-                          {new Date(job.dueDate).toLocaleDateString()}
-                          {isOverdue && " (overdue)"}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${statusColors[job.status]}`}
-                      >
-                        {statusLabels[job.status]}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Job #</TableHead>
+              <TableHead>Customer Job #</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedJobs.map((job) => {
+              const isDueSoon = job.dueDate && new Date(job.dueDate) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+              const isOverdue = job.dueDate && new Date(job.dueDate) < new Date() && job.status !== "complete" && job.status !== "cancelled";
+              return (
+                <TableRow key={job.id} clickable>
+                  <TableCell variant="mono">
+                    <Link
+                      href={`/jobs/${job.id}`}
+                      className="hover:text-accent-dark"
+                    >
+                      {job.jobNumber}
+                    </Link>
+                  </TableCell>
+                  <TableCell variant="muted">
+                    {job.customerJobNumber || "-"}
+                  </TableCell>
+                  <TableCell>{job.customerName}</TableCell>
+                  <TableCell variant="muted">{job.jobTitle}</TableCell>
+                  <TableCell>
+                    {job.dueDate ? (
+                      <span className={`font-medium ${isOverdue ? "text-red-600" : isDueSoon ? "text-orange-600" : "text-slate-600"}`}>
+                        {new Date(job.dueDate).toLocaleDateString()}
+                        {isOverdue && (
+                          <Badge variant="danger" size="sm" className="ml-2">
+                            Overdue
+                          </Badge>
+                        )}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
+                    ) : (
+                      <span className="text-slate-400">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={job.status as any} rounded>
+                      {statusLabels[job.status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
                       {job.status === "pending" && (
                         <button
                           onClick={() => handleStart(job.id)}
                           disabled={actionInProgress === job.id}
-                          className="text-blue-600 hover:text-blue-800 mr-3 disabled:opacity-50"
+                          className="text-accent hover:text-accent-dark text-sm font-medium disabled:opacity-50 transition-colors"
                         >
-                          Start
+                          {actionInProgress === job.id ? <LoadingSpinner size="sm" /> : "Start"}
                         </button>
                       )}
                       {job.status === "in_progress" && (
                         <button
                           onClick={() => handleComplete(job.id)}
                           disabled={actionInProgress === job.id}
-                          className="text-green-600 hover:text-green-800 mr-3 disabled:opacity-50"
+                          className="text-green-600 hover:text-green-700 text-sm font-medium disabled:opacity-50 transition-colors"
                         >
-                          Complete
+                          {actionInProgress === job.id ? <LoadingSpinner size="sm" /> : "Complete"}
                         </button>
                       )}
-                      <a
+                      <Link
                         href={`/jobs/${job.id}`}
-                        className="text-gray-600 hover:text-gray-800"
+                        className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors"
                       >
                         View
-                      </a>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </Link>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
       )}
 
       {totalPages > 1 && (
@@ -269,7 +256,7 @@ function JobListContent({ jobs }: { jobs: Job[] }) {
 
 export function JobList({ jobs }: { jobs: Job[] }) {
   return (
-    <Suspense fallback={<div className="text-gray-500">Loading...</div>}>
+    <Suspense fallback={<LoadingSpinner size="lg" className="mx-auto" />}>
       <JobListContent jobs={jobs} />
     </Suspense>
   );

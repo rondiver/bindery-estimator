@@ -39,12 +39,8 @@ export function generateNumber(
 }
 
 // Generate quote number (no prefix per plan)
+// Note: Job numbers are inherited from their source quote, not generated independently
 export function generateQuoteNumber(existingNumbers: string[]): string {
-  return generateNumber(existingNumbers);
-}
-
-// Generate job number (no prefix per plan)
-export function generateJobNumber(existingNumbers: string[]): string {
   return generateNumber(existingNumbers);
 }
 
